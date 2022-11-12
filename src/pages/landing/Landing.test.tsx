@@ -12,7 +12,7 @@ import Landing from './Landing';
 
 vi.mock('localforage');
 
-const mockedSetItem = localforage.setItem as MockedFunction<typeof localforage.setItem>;
+const mockGetItem = localforage.getItem as MockedFunction<typeof localforage.getItem>;
 
 function wrapper({ children }: PropsWithChildren<unknown>) {
 	const queryClient = new QueryClient({
@@ -198,11 +198,28 @@ test('should navigate user to chat page when login is successful', async () => {
 
 	await userEvent.click(screen.getByRole('button', { name: /login/i }));
 	await screen.findByText('Chat Page');
-	expect(mockedSetItem).toHaveBeenCalledWith('chat-app-auth-user-info', {
+	expect(localforage.setItem).toHaveBeenCalledWith('chat-app-auth-user-info', {
 		username: 'johndoe',
 		token: 'ios0wew04nsl9823sfd9',
 		email: 'johndoe@gmail.com',
 	});
+});
+
+test('should navigate user to chat page when they already have an account', async () => {
+	mockGetItem.mockResolvedValueOnce({
+		username: 'johndoe',
+		token: 'ios0wew04nsl9823sfd9',
+		email: 'johndoe@gmail.com',
+	});
+	render(
+		<Routes>
+			<Route element={<Landing />} path="/" />
+			<Route element={<Chat />} path="chat" />
+		</Routes>,
+		{ wrapper }
+	);
+	expect(mockGetItem).toHaveBeenCalledWith('chat-app-auth-user-info');
+	await screen.findByText('Chat Page');
 });
 
 afterAll(() => {

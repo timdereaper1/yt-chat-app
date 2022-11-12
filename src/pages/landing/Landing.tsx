@@ -1,6 +1,7 @@
 import useForm from 'chat/shared/hooks/useForm';
 import usePost from 'chat/shared/hooks/usePost';
 import localforage from 'localforage';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { ErrorCodes, StatusErrors } from '../../shared/errors';
@@ -18,6 +19,7 @@ type UserLoginCredentials = z.infer<typeof UserLoginCredentialsValidationSchema>
 
 export default function Landing() {
 	const navigate = useNavigate();
+
 	const mutation = usePost<UserLoginCredentials, AuthenticatedUser>({
 		path: '/auth/login',
 		validationSchema: AuthenticatedUserValidationSchema,
@@ -26,6 +28,7 @@ export default function Landing() {
 			navigate('/chat');
 		},
 	});
+
 	const form = useForm({
 		validationSchema: UserLoginCredentialsValidationSchema,
 		initialValues: { email: '', password: '' },
@@ -33,6 +36,18 @@ export default function Landing() {
 			mutation.mutate(values);
 		},
 	});
+
+	React.useEffect(() => {
+		async function checkAndNavigateAuthenticatedUser() {
+			try {
+				const authUser = await localforage.getItem<AuthenticatedUser>(
+					'chat-app-auth-user-info'
+				);
+				authUser?.token && navigate('/chat');
+			} catch {}
+		}
+		checkAndNavigateAuthenticatedUser();
+	}, [navigate]);
 
 	return (
 		<div>
