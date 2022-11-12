@@ -1,8 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
-import axios, { AxiosError, AxiosResponse } from 'axios';
 import useForm from 'chat/shared/hooks/useForm';
+import usePost from 'chat/shared/hooks/usePost';
 import localforage from 'localforage';
-import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { ErrorCodes, StatusErrors } from '../../shared/errors';
@@ -20,11 +18,9 @@ type UserLoginCredentials = z.infer<typeof UserLoginCredentialsValidationSchema>
 
 export default function Landing() {
 	const navigate = useNavigate();
-	const mutation = useMutation<
-		AuthenticatedUser,
-		AxiosError<AuthenticatedUser, UserLoginCredentials>,
-		UserLoginCredentials
-	>(validateUserLoginCredentials, {
+	const mutation = usePost<UserLoginCredentials, AuthenticatedUser>({
+		path: '/auth/login',
+		validationSchema: AuthenticatedUserValidationSchema,
 		onSuccess(data) {
 			localforage.setItem('chat-app-auth-user-info', data);
 			navigate('/chat');
@@ -93,14 +89,4 @@ export default function Landing() {
 			</footer>
 		</div>
 	);
-}
-
-async function validateUserLoginCredentials(userCredentials: UserLoginCredentials) {
-	const response = await axios.post<
-		AuthenticatedUser,
-		AxiosResponse<AuthenticatedUser, UserLoginCredentials>,
-		UserLoginCredentials
-	>('http://localhost:8080/api/v1/auth/login', userCredentials);
-	AuthenticatedUserValidationSchema.parse(response.data);
-	return response.data;
 }

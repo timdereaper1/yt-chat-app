@@ -1,7 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
-import axios, { AxiosError, AxiosResponse } from 'axios';
 import { ErrorCodes, StatusErrors } from 'chat/shared/errors';
 import useForm from 'chat/shared/hooks/useForm';
+import usePost from 'chat/shared/hooks/usePost';
 import React from 'react';
 import { z } from 'zod';
 
@@ -19,11 +18,9 @@ type ValidatedEmailResponse = z.infer<typeof ValidatedEmailResponseSchema>;
 export default function ForgottenPassword() {
 	const [message, setMessage] = React.useState('');
 
-	const mutation = useMutation<
-		ValidatedEmailResponse,
-		AxiosError<ValidatedEmailResponse, ForgottenPasswordCredentials>,
-		ForgottenPasswordCredentials
-	>(validateEmail, {
+	const mutation = usePost<ForgottenPasswordCredentials, ValidatedEmailResponse>({
+		path: '/auth/email',
+		validationSchema: ValidatedEmailResponseSchema,
 		onSuccess(data, variables) {
 			if (!data.success) return;
 			const hiddenEmail = getEncryptedEmail(variables.email);
@@ -76,16 +73,6 @@ export default function ForgottenPassword() {
 			</form>
 		</div>
 	);
-}
-
-async function validateEmail(values: ForgottenPasswordCredentials) {
-	const response = await axios.post<
-		ValidatedEmailResponse,
-		AxiosResponse<ValidatedEmailResponse, ForgottenPasswordCredentials>,
-		ForgottenPasswordCredentials
-	>('http://localhost:8080/api/v1/auth/email', values);
-	ValidatedEmailResponseSchema.parse(response.data);
-	return response.data;
 }
 
 function getEncryptedEmail(email: string): string {
