@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import axios, { AxiosError, AxiosResponse } from 'axios';
+import useForm from 'chat/shared/hooks/useForm';
 import localforage from 'localforage';
-import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { ErrorCodes, StatusErrors } from '../../shared/errors';
@@ -28,18 +28,7 @@ const UserSignUpCredentialsValidationSchema = z
 
 type UserSignUpCredentials = z.infer<typeof UserSignUpCredentialsValidationSchema>;
 
-type UserSignUpCredentialsFieldErrors = {
-	[key in keyof UserSignUpCredentials]?: string[] | undefined;
-};
-
 export default function Signup() {
-	const [fieldErrors, setFieldErrors] = React.useState<UserSignUpCredentialsFieldErrors>();
-	const [credentials, setCredentials] = React.useState<UserSignUpCredentials>({
-		confirmPassword: '',
-		email: '',
-		password: '',
-		username: '',
-	});
 	const navigate = useNavigate();
 
 	const mutation = useMutation<
@@ -47,33 +36,22 @@ export default function Signup() {
 		AxiosError<AuthenticatedUser, UserSignUpCredentials>,
 		UserSignUpCredentials
 	>(registerNewUserCredentials, {
-		onSuccess(data, variables, context) {
+		onSuccess(data) {
 			localforage.setItem('chat-app-auth-user-info', data);
 			navigate('/chat');
 		},
 	});
-
-	const { confirmPassword, email, password, username } = credentials;
-	const isCredentialsInvalid = !confirmPassword || !email || !password || !username;
-	const hasErrors = Boolean(fieldErrors);
-
-	function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
-		const { name, value } = event.currentTarget;
-		const userCredentials = { ...credentials, [name]: value };
-		setCredentials(userCredentials);
-		const validate = UserSignUpCredentialsValidationSchema.safeParse(userCredentials);
-		if (validate.success) return setFieldErrors(undefined);
-		setFieldErrors(validate.error.formErrors.fieldErrors);
-	}
-
-	function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-		event.preventDefault();
-		mutation.mutate(credentials);
-	}
+	const form = useForm({
+		validationSchema: UserSignUpCredentialsValidationSchema,
+		initialValues: { confirmPassword: '', email: '', password: '', username: '' },
+		onSubmit(values) {
+			mutation.mutate(values);
+		},
+	});
 
 	return (
 		<div>
-			<form onSubmit={handleSubmit}>
+			<form onSubmit={form.handleSubmit}>
 				<p>Enter your credentials to create an account</p>
 				{mutation.isError && mutation.error ? (
 					<p>
@@ -91,12 +69,12 @@ export default function Signup() {
 							name="username"
 							id="username"
 							required
-							onChange={handleChange}
-							value={credentials.username}
+							onChange={form.handleChange}
+							value={form.values.username}
 						/>
 					</label>
-					{fieldErrors?.username && credentials.username ? (
-						<small>{fieldErrors.username.join('. ')}</small>
+					{form.errors?.username && form.values.username ? (
+						<small>{form.errors.username.join('. ')}</small>
 					) : null}
 				</div>
 				<div>
@@ -105,14 +83,14 @@ export default function Signup() {
 						<input
 							type="email"
 							required
-							onChange={handleChange}
-							value={credentials.email}
+							onChange={form.handleChange}
+							value={form.values.email}
 							name="email"
 							id="email"
 						/>
 					</label>
-					{fieldErrors?.email && credentials.email ? (
-						<small>{fieldErrors.email.join('. ')}</small>
+					{form.errors?.email && form.values.email ? (
+						<small>{form.errors.email.join('. ')}</small>
 					) : null}
 				</div>
 				<div>
@@ -121,14 +99,14 @@ export default function Signup() {
 						<input
 							type="password"
 							required
-							onChange={handleChange}
-							value={credentials.password}
+							onChange={form.handleChange}
+							value={form.values.password}
 							name="password"
 							id="password"
 						/>
 					</label>
-					{fieldErrors?.password && credentials.password ? (
-						<small>{fieldErrors.password.join('. ')}</small>
+					{form.errors?.password && form.values.password ? (
+						<small>{form.errors.password.join('. ')}</small>
 					) : null}
 				</div>
 				<div>
@@ -137,18 +115,18 @@ export default function Signup() {
 						<input
 							type="password"
 							required
-							onChange={handleChange}
-							value={credentials.confirmPassword}
+							onChange={form.handleChange}
+							value={form.values.confirmPassword}
 							name="confirmPassword"
 							id="confirmPassword"
 						/>
 					</label>
-					{fieldErrors?.confirmPassword && credentials.confirmPassword ? (
-						<small>{fieldErrors.confirmPassword.join('. ')}</small>
+					{form.errors?.confirmPassword && form.values.confirmPassword ? (
+						<small>{form.errors.confirmPassword.join('. ')}</small>
 					) : null}
 				</div>
 				<div>
-					<button type="submit" disabled={isCredentialsInvalid || hasErrors}>
+					<button type="submit" disabled={form.invalid}>
 						Sign Up
 					</button>
 				</div>

@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import axios, { AxiosError, AxiosResponse } from 'axios';
 import { ErrorCodes, StatusErrors } from 'chat/shared/errors';
+import useForm from 'chat/shared/hooks/useForm';
 import React from 'react';
 import { z } from 'zod';
 
@@ -15,13 +16,7 @@ const ValidatedEmailResponseSchema = z.object({
 type ForgottenPasswordCredentials = z.infer<typeof ForgottenPasswordCredentialsValidationSchema>;
 type ValidatedEmailResponse = z.infer<typeof ValidatedEmailResponseSchema>;
 
-type ForgottenPasswordCredentialsFieldErrors = {
-	[key in keyof ForgottenPasswordCredentials]?: string[] | undefined;
-};
-
 export default function ForgottenPassword() {
-	const [fieldErrors, setFieldErrors] = React.useState<ForgottenPasswordCredentialsFieldErrors>();
-	const [values, setValues] = React.useState({ email: '' });
 	const [message, setMessage] = React.useState('');
 
 	const mutation = useMutation<
@@ -33,31 +28,24 @@ export default function ForgottenPassword() {
 			if (!data.success) return;
 			const hiddenEmail = getEncryptedEmail(variables.email);
 			setMessage(`An email has been sent to ${hiddenEmail} to reset your password.`);
-			setValues({ email: '' });
 		},
 	});
 
-	const isValuesInvalid = !values.email;
-	const hasErrors = Boolean(fieldErrors);
-
-	function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
-		const { name, value } = event.currentTarget;
-		const updatedValues = { ...values, [name]: value };
-		setValues(updatedValues);
-		const validate = ForgottenPasswordCredentialsValidationSchema.safeParse(updatedValues);
-		if (validate.success) return setFieldErrors(undefined);
-		setFieldErrors(validate.error.formErrors.fieldErrors);
-	}
-
-	function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-		event.preventDefault();
-		setFieldErrors(undefined);
-		mutation.mutate(values);
-	}
+	const form = useForm({
+		validationSchema: ForgottenPasswordCredentialsValidationSchema,
+		initialValues: { email: '' },
+		onSubmit(values, actions) {
+			mutation.mutate(values, {
+				onSuccess() {
+					actions.resetForm();
+				},
+			});
+		},
+	});
 
 	return (
 		<div>
-			<form onSubmit={handleSubmit}>
+			<form onSubmit={form.handleSubmit}>
 				{mutation.isSuccess && message ? <p>{message}</p> : null}
 				{mutation.isError && mutation.error ? (
 					<p>
@@ -72,17 +60,17 @@ export default function ForgottenPassword() {
 						Email
 						<input
 							type="email"
-							onChange={handleChange}
-							value={values.email}
+							onChange={form.handleChange}
+							value={form.values.email}
 							name="email"
 							id="email"
 							placeholder="e.g user@domain.com"
 							required
 						/>
 					</label>
-					{fieldErrors?.email ? <small>{fieldErrors.email.join('. ')}</small> : null}
+					{form.errors?.email ? <small>{form.errors.email.join('. ')}</small> : null}
 				</div>
-				<button type="submit" disabled={isValuesInvalid || hasErrors}>
+				<button type="submit" disabled={form.invalid}>
 					Submit
 				</button>
 			</form>

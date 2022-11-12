@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import axios, { AxiosError, AxiosResponse } from 'axios';
+import useForm from 'chat/shared/hooks/useForm';
 import localforage from 'localforage';
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -17,16 +18,7 @@ const UserLoginCredentialsValidationSchema = z.object({
 
 type UserLoginCredentials = z.infer<typeof UserLoginCredentialsValidationSchema>;
 
-type UserLoginCredentialsFieldErrors = Partial<{
-	[key in keyof UserLoginCredentials]: string[] | undefined;
-}>;
-
 export default function Landing() {
-	const [credentials, setCredentials] = React.useState<UserLoginCredentials>({
-		email: '',
-		password: '',
-	});
-	const [errors, setErrors] = React.useState<UserLoginCredentialsFieldErrors>();
 	const navigate = useNavigate();
 	const mutation = useMutation<
 		AuthenticatedUser,
@@ -38,30 +30,17 @@ export default function Landing() {
 			navigate('/chat');
 		},
 	});
-
-	const { email, password } = credentials;
-
-	const isCredentialsInvalid = !email && !password;
-	const hasErrors = !!errors;
-
-	function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
-		const { name, value } = event.currentTarget;
-		const updatedUserCredentials = { ...credentials, [name]: value };
-		setCredentials(updatedUserCredentials);
-		const validate = UserLoginCredentialsValidationSchema.safeParse(updatedUserCredentials);
-		if (validate.success) return setErrors(undefined);
-		setErrors(validate.error.formErrors.fieldErrors);
-	}
-
-	async function handleSubmission(event: React.FormEvent<HTMLFormElement>) {
-		event.preventDefault();
-		setErrors(undefined);
-		mutation.mutate(credentials);
-	}
+	const form = useForm({
+		validationSchema: UserLoginCredentialsValidationSchema,
+		initialValues: { email: '', password: '' },
+		onSubmit(values) {
+			mutation.mutate(values);
+		},
+	});
 
 	return (
 		<div>
-			<form onSubmit={handleSubmission}>
+			<form onSubmit={form.handleSubmit}>
 				<p>Enter your account login details</p>
 				{mutation.isError && mutation.error ? (
 					<p>
@@ -75,32 +54,34 @@ export default function Landing() {
 					<label htmlFor="email">
 						Email
 						<input
-							onChange={handleInputChange}
+							onChange={form.handleChange}
 							type="email"
 							name="email"
 							id="email"
 							required
-							value={credentials.email}
+							value={form.values.email}
 						/>
 					</label>
-					{errors?.email ? <small>{errors?.email.join('. ')}</small> : null}
+					{form.errors?.email ? <small>{form.errors?.email.join('. ')}</small> : null}
 				</div>
 				<div>
 					<label htmlFor="password">
 						Password
 						<input
-							onChange={handleInputChange}
+							onChange={form.handleChange}
 							type="password"
 							name="password"
 							id="password"
 							required
-							value={credentials.password}
+							value={form.values.password}
 						/>
 					</label>
-					{errors?.password ? <small>{errors?.password.join('. ')}</small> : null}
+					{form.errors?.password ? (
+						<small>{form.errors?.password.join('. ')}</small>
+					) : null}
 				</div>
 				<Link to="forgotten-password">Forgotten password?</Link>
-				<button disabled={isCredentialsInvalid || hasErrors} type="submit">
+				<button disabled={form.invalid} type="submit">
 					Login
 				</button>
 			</form>
