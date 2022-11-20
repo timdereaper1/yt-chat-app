@@ -35,7 +35,7 @@ export default function Signup() {
 		validationSchema: AuthenticatedUserValidationSchema,
 		onSuccess(data) {
 			localforage.setItem('chat-app-auth-user-info', data);
-			navigate('/chat');
+			navigate('/users');
 		},
 	});
 	const form = useForm({

@@ -25,7 +25,7 @@ export default function Landing() {
 		validationSchema: AuthenticatedUserValidationSchema,
 		onSuccess(data) {
 			localforage.setItem('chat-app-auth-user-info', data);
-			navigate('/chat');
+			navigate('/users');
 		},
 	});
 
@@ -43,7 +43,7 @@ export default function Landing() {
 				const authUser = await localforage.getItem<AuthenticatedUser>(
 					'chat-app-auth-user-info'
 				);
-				authUser?.token && navigate('/chat');
+				authUser?.token && navigate('/users');
 			} catch {}
 		}
 		checkAndNavigateAuthenticatedUser();

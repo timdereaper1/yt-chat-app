@@ -29,8 +29,8 @@ function setup() {
 	render(<Landing />, { wrapper });
 }
 
-function Chat() {
-	return <div>Chat Page</div>;
+function Users() {
+	return <div>Users Page</div>;
 }
 
 const server = setupServer();
@@ -173,7 +173,7 @@ test('should show unknown error if the server returns an incorrect data', async 
 	).toBeInTheDocument();
 });
 
-test('should navigate user to chat page when login is successful', async () => {
+test('should navigate user to users page when login is successful', async () => {
 	server.use(
 		rest.post('http://localhost:8080/api/v1/auth/login', (req, res, ctx) => {
 			return res(
@@ -188,7 +188,7 @@ test('should navigate user to chat page when login is successful', async () => {
 	render(
 		<Routes>
 			<Route element={<Landing />} path="/" />
-			<Route element={<Chat />} path="chat" />
+			<Route element={<Users />} path="users" />
 		</Routes>,
 		{ wrapper }
 	);
@@ -197,7 +197,7 @@ test('should navigate user to chat page when login is successful', async () => {
 	await userEvent.type(screen.getByLabelText(/Password/i), 'jso392');
 
 	await userEvent.click(screen.getByRole('button', { name: /login/i }));
-	await screen.findByText('Chat Page');
+	await screen.findByText('Users Page');
 	expect(localforage.setItem).toHaveBeenCalledWith('chat-app-auth-user-info', {
 		username: 'johndoe',
 		token: 'ios0wew04nsl9823sfd9',
@@ -205,7 +205,7 @@ test('should navigate user to chat page when login is successful', async () => {
 	});
 });
 
-test('should navigate user to chat page when they already have an account', async () => {
+test('should navigate user to users page when they already have an account', async () => {
 	mockGetItem.mockResolvedValueOnce({
 		username: 'johndoe',
 		token: 'ios0wew04nsl9823sfd9',
@@ -214,12 +214,12 @@ test('should navigate user to chat page when they already have an account', asyn
 	render(
 		<Routes>
 			<Route element={<Landing />} path="/" />
-			<Route element={<Chat />} path="chat" />
+			<Route element={<Users />} path="users" />
 		</Routes>,
 		{ wrapper }
 	);
 	expect(mockGetItem).toHaveBeenCalledWith('chat-app-auth-user-info');
-	await screen.findByText('Chat Page');
+	await screen.findByText('Users Page');
 });
 
 afterAll(() => {

@@ -24,7 +24,7 @@ const wrapper = ({ children }: PropsWithChildren<unknown>) => {
 
 const setup = () => render(<Signup />, { wrapper });
 
-const Chat = () => <div>Chat Page</div>;
+const Users = () => <div>Users Page</div>;
 
 const server = setupServer();
 
@@ -136,7 +136,7 @@ test('should alert the user when the server responses when invalid data', async 
 	);
 });
 
-test('should navigate user to chat page when sign up is successful', async () => {
+test('should navigate user to users page when sign up is successful', async () => {
 	server.use(
 		rest.post('http://localhost:8080/api/v1/auth/signup', (req, res, ctx) =>
 			res(
@@ -151,7 +151,7 @@ test('should navigate user to chat page when sign up is successful', async () =>
 	render(
 		<Routes>
 			<Route path="/signup" element={<Signup />} />
-			<Route path="/chat" element={<Chat />} />
+			<Route path="/users" element={<Users />} />
 		</Routes>,
 		{ wrapper }
 	);
@@ -162,7 +162,7 @@ test('should navigate user to chat page when sign up is successful', async () =>
 
 	expect(screen.getByRole('button', { name: /Sign up/i })).not.toBeDisabled();
 	userEvent.click(screen.getByRole('button', { name: /Sign up/i }));
-	await screen.findByText('Chat Page');
+	await screen.findByText('Users Page');
 	expect(localforage.setItem).toHaveBeenCalledWith('chat-app-auth-user-info', {
 		username: 'johndoe',
 		token: 'ios0wew04nsl9823sfd9',
